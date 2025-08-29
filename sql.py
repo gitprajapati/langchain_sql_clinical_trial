@@ -96,7 +96,7 @@ class ClinicalTrialChatbot:
             self.db = SQLDatabase.from_uri(f"sqlite:///{self.db_path}")
             
             # Initialize LLM
-            llm = ChatOpenAI(model="gpt-4o", temperature=0, verbose=True)
+            llm = ChatOpenAI(model="gpt-4o", temperature=0)
             
             # Create toolkit with all SQL tools
             toolkit = SQLDatabaseToolkit(db=self.db, llm=llm)
@@ -110,8 +110,7 @@ class ClinicalTrialChatbot:
                 llm, 
                 tools, 
                 prompt=system_prompt,
-                checkpointer=self.memory,
-                verbose = True
+                checkpointer=self.memory
             )
             
             st.success("✅ Clinical Trial SQL Agent initialized successfully!")
