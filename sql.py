@@ -1,6 +1,6 @@
 """
 Clinical Trial SQL Chatbot using LangGraph SQL Agent
-A Streamlit chatbot that uses LangGraph's SQL agent to query clinical trial database.
+A clean Streamlit chatbot interface that uses LangGraph's SQL agent to query clinical trial database.
 """
 
 import os
@@ -24,31 +24,38 @@ load_dotenv()
 st.set_page_config(
     page_title="Clinical Trial AI Assistant",
     page_icon="🔬",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="centered",
+    initial_sidebar_state="collapsed"
 )
 
-# Custom CSS
+# Custom CSS for clean UI
 st.markdown("""
 <style>
     .main-header {
         font-size: 2.5rem;
         color: #1f77b4;
         text-align: center;
+        margin-bottom: 2rem;
+        font-weight: 600;
+    }
+    .subtitle {
+        text-align: center;
+        color: #666;
+        margin-bottom: 2rem;
+        font-size: 1.1rem;
+    }
+    /* Hide sidebar */
+    .css-1d391kg {
+        display: none;
+    }
+    /* Clean chat interface */
+    .stChatMessage {
+        border-radius: 10px;
         margin-bottom: 1rem;
     }
-    .database-info {
-        background-color: #f0f2f6;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        border-left: 4px solid #1f77b4;
-        margin-bottom: 1rem;
-    }
-    .example-queries {
-        background-color: #f8f9fa;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        border-left: 4px solid #28a745;
+    /* Clean input box */
+    .stChatInput > div {
+        border-radius: 25px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -103,7 +110,8 @@ class ClinicalTrialChatbot:
                 llm, 
                 tools, 
                 prompt=system_prompt,
-                checkpointer=self.memory
+                checkpointer=self.memory,
+                verbose = True
             )
             
             st.success("✅ Clinical Trial SQL Agent initialized successfully!")
@@ -244,32 +252,6 @@ RESPONSE FORMAT:
 Remember: Handle ANY type of clinical trial question flexibly by mapping user terminology to database fields and using comprehensive search strategies across all relevant columns and tables.
 """
     
-    def get_database_info(self) -> Dict[str, Any]:
-        """Get information about the database structure."""
-        try:
-            # Get table names
-            tables = self.db.get_usable_table_names()
-            
-            # Get row counts for each table
-            table_info = {}
-            for table in tables:
-                try:
-                    result = self.db.run(f"SELECT COUNT(*) FROM `{table}`")
-                    count = int(result.strip("[]()").split(",")[0])
-                    table_info[table] = count
-                except:
-                    table_info[table] = "Unknown"
-            
-            return {
-                "tables": tables,
-                "table_counts": table_info,
-                "total_tables": len(tables)
-            }
-            
-        except Exception as e:
-            st.error(f"Error getting database info: {e}")
-            return {"tables": [], "table_counts": {}, "total_tables": 0}
-    
     def query_agent(self, question: str, thread_id: str = "default") -> str:
         """Query the SQL agent with a question."""
         try:
@@ -297,68 +279,12 @@ Remember: Handle ANY type of clinical trial question flexibly by mapping user te
         except Exception as e:
             return f"Error processing query: {str(e)}"
 
-def render_sidebar():
-    """Render the sidebar with database info and examples."""
-    with st.sidebar:
-        st.header("🗄️ Database Information")
-        
-        if 'chatbot' in st.session_state:
-            db_info = st.session_state.chatbot.get_database_info()
-            
-            with st.container():
-                st.markdown('<div class="database-info">', unsafe_allow_html=True)
-                st.write(f"**📊 Total Tables:** {db_info['total_tables']}")
-                st.write("**📋 Table Overview:**")
-                for table, count in db_info['table_counts'].items():
-                    st.write(f"• {table}: {count} records")
-                st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.header("💡 Example Queries")
-        with st.container():
-            st.markdown('<div class="example-queries">', unsafe_allow_html=True)
-            
-            example_queries = [
-                "What are the top 5 trials with the highest ORR?",
-                "Compare nivolumab vs pembrolizumab response rates",
-                "Show me phase 3 trials with PFS data",
-                "Which treatments have the best safety profile?",
-                "Find trials with median OS over 20 months",
-                "What's the average ORR by trial phase?",
-                "Show checkmate trials and their outcomes",
-                "Which drugs have the most Grade 3/4 adverse events?",
-                "Find combination therapies vs monotherapies",
-                "What trials are approved in the US?"
-            ]
-            
-            for i, query in enumerate(example_queries, 1):
-                if st.button(f"📝 {query}", key=f"example_{i}", use_container_width=True):
-                    st.session_state.current_query = query
-                    st.rerun()
-            
-            st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.header("ℹ️ Tips")
-        st.markdown("""
-        **Query Tips:**
-        - Use drug names or abbreviations (nivo, pembro, ipi)
-        - Ask about specific metrics (ORR, PFS, OS, safety)
-        - Compare treatments or phases
-        - Ask for summaries or trends
-        - Request specific trial data
-        
-        **Data Notes:**
-        - ORR = Overall Response Rate (%)
-        - mPFS = Median Progression-Free Survival  
-        - mOS = Median Overall Survival
-        - NR = Not Reached (positive outcome)
-        """)
-
 def main():
     """Main application function."""
     
-    # Header
-    st.markdown('<h1 class="main-header">🔬 Clinical Trial SQL Assistant</h1>', unsafe_allow_html=True)
-    st.markdown("Ask questions about clinical trial data using natural language. The AI will generate and execute SQL queries to find answers.")
+    # Clean header section
+    st.markdown('<h1 class="main-header">🔬 Clinical Trial AI Assistant</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="subtitle">Ask questions about clinical trial data using natural language</p>', unsafe_allow_html=True)
     
     # Initialize chatbot
     if 'chatbot' not in st.session_state:
@@ -368,38 +294,10 @@ def main():
     if 'messages' not in st.session_state:
         st.session_state.messages = []
     
-    if 'current_query' not in st.session_state:
-        st.session_state.current_query = None
-    
-    # Render sidebar
-    render_sidebar()
-    
-    # Main chat interface
-    st.subheader("💬 Chat with Your Clinical Trial Database")
-    
     # Display chat messages
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-    
-    # Handle example query selection
-    if st.session_state.current_query:
-        query = st.session_state.current_query
-        st.session_state.current_query = None  # Clear it
-        
-        # Add to messages and process
-        st.session_state.messages.append({"role": "user", "content": query})
-        
-        with st.chat_message("user"):
-            st.markdown(query)
-        
-        with st.chat_message("assistant"):
-            with st.spinner("Analyzing clinical trial data..."):
-                response = st.session_state.chatbot.query_agent(query)
-                st.markdown(response)
-        
-        st.session_state.messages.append({"role": "assistant", "content": response})
-        st.rerun()
     
     # Chat input
     if prompt := st.chat_input("Ask about clinical trials..."):
@@ -416,22 +314,6 @@ def main():
                 st.markdown(response)
         
         st.session_state.messages.append({"role": "assistant", "content": response})
-    
-    # Footer
-    with st.expander("🔧 Advanced Options"):
-        st.write("**Thread Management:**")
-        if st.button("🔄 Clear Conversation History"):
-            st.session_state.messages = []
-            st.rerun()
-        
-        st.write("**Database Actions:**")
-        if st.button("📊 Show Database Schema"):
-            with st.spinner("Loading database schema..."):
-                try:
-                    schema_info = st.session_state.chatbot.db.get_table_info()
-                    st.text_area("Database Schema", schema_info, height=300)
-                except Exception as e:
-                    st.error(f"Error loading schema: {e}")
 
 if __name__ == "__main__":
     main()
