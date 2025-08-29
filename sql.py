@@ -240,9 +240,7 @@ SEARCH STRATEGY FOR ANY QUERY:
 - Join relevant tables for comprehensive results
 - Apply appropriate filters and sorting
 - Present results with clinical context and interpretation
-- When comparing specific treatments (like "nivolumab monotherapy"), make sure you identify the exact treatment arms that match that description. For example:
-   - If asked about "nivolumab monotherapy" vs "combination therapy", only include arms where the Product/Regimen Name contains "Nivolumab" alone, not "Nivolumab + other drugs"
-   - Be precise about which specific treatment regimen you're discussing
+
 -  ** For Handle Comparator Queries only:**
     *   If you **do not** find the requested regimen in any Product/Regimen Name field, then check if it is mentioned in the Comparator field of any object.
     *   If you find it in a Comparator field, you MUST respond by:
