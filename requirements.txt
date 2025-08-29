@@ -1,24 +1,6 @@
-# Enhanced Clinical Trial SQL Chatbot with Intelligent Visualization
-# Core framework and UI
 streamlit
-pandas
-numpy
-
-# Database and SQL
-sqlite3
-sqlalchemy
-
-
-# LangChain ecosystem
 langchain
-
-
-
-# OpenAI API
-openai
-
-# Environment and configuration
+langchain-openai
+langchain-community
+langgraph
 python-dotenv
-
-
-
