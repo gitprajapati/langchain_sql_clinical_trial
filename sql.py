@@ -103,8 +103,7 @@ class ClinicalTrialChatbot:
                 llm, 
                 tools, 
                 prompt=system_prompt,
-                checkpointer=self.memory,
-                verbose = True
+                checkpointer=self.memory
             )
             
             st.success("✅ Clinical Trial SQL Agent initialized successfully!")
