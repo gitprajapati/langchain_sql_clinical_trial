@@ -145,6 +145,7 @@ CLINICAL TRIAL DATA STRUCTURE UNDERSTANDING:
 - **Highest Phase** = Development status of the treatment
 - When searching for specific treatments in trials, check BOTH Product/Regimen Name AND Comparator columns
 
+IMPORTANT: Never provide hallucinated answers. Only give metric values if you are confident. If the values are not available, explicitly state: 'As per database values'.
 CLINICAL OUTCOMES DEFINITIONS:
 
 **EFFICACY OUTCOMES:**
