@@ -96,7 +96,7 @@ class ClinicalTrialChatbot:
             self.db = SQLDatabase.from_uri(f"sqlite:///{self.db_path}")
             
             # Initialize LLM
-            llm = ChatOpenAI(model="gpt-5", temperature=0.1)
+            llm = ChatOpenAI(model="gpt-4o", temperature=0.1)
             
             # Create toolkit with all SQL tools
             toolkit = SQLDatabaseToolkit(db=self.db, llm=llm)
