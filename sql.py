@@ -127,8 +127,8 @@ class VisualizationEngine:
         5. Handle other missing values as null
         6. Structure should be: {{"Treatment": [...], "Metric1": [...], "Metric2": [...]}}
         
-        CRITICAL: For survival metrics (mPFS, mOS, mDoR), if you see "NR", "Not reached", or "not reached", 
-        preserve these EXACTLY as "NR" in the output JSON. Do not convert them to null or empty strings.
+        CRITICAL: For survival metrics (mPFS, mOS, mDoR), if you see "NR", "Not reached", "NE", or "Not estimable", 
+        preserve these EXACTLY as they appear in the output JSON. Do not convert them to null or empty strings.
         
         Example output format:
         {{
@@ -136,7 +136,7 @@ class VisualizationEngine:
             "ORR": [45.0, 58.3, 47.2],
             "CR": [18.7, 22.0, 22.2],
             "PR": [26.3, 36.3, 25.0],
-            "mPFS": [11.5, "NR", 10.2],
+            "mPFS": [11.5, "NR", "NE"],
             "mOS": ["NR", "NR", 15.8]
         }}
         
@@ -434,7 +434,7 @@ class VisualizationEngine:
         return final_metrics
     
     def display_bar_charts(self, df: pd.DataFrame, trial_col: str, metric_cols: List[str], key_prefix: str = ""):
-        """Display bar charts using Code 2 design pattern with proper NR handling."""
+        """Display bar charts design pattern with proper NR and NE handling."""
         if df.empty:
             st.info("No data available for visualization")
             return
@@ -453,9 +453,9 @@ class VisualizationEngine:
         
         # Melt data for plotting - Code 2 style with debugging
         melted = pd.melt(df_viz[['Display_Name'] + available_metrics], 
-                         id_vars='Display_Name',
-                         var_name="Metric", 
-                         value_name="RawValue")
+                        id_vars='Display_Name',
+                        var_name="Metric", 
+                        value_name="RawValue")
         
         # Debug: Print the raw values before processing
         print("Raw values in melted data:")
@@ -464,14 +464,16 @@ class VisualizationEngine:
         # Clean and process values - Code 2 style
         melted["RawValue"] = melted["RawValue"].astype(str).str.strip()
         
-        # Define missing values - EXCLUDE "NR" and "Not Reached" from missing values (Code 2 approach)
+        # Define missing values - EXCLUDE "NR", "NE", and "Not Reached" from missing values
         missing_values = {"", "na", "n/a", "nan", "none", "null", "not available"}
-        # Define "Not Reached" values separately - Code 2 approach
+        # Define "Not Reached" and "Not Estimable" values separately
         not_reached_values = {"nr", "not reached", "not_reached", "notreached", "not-reached"}
+        not_estimable_values = {"ne", "not estimable", "not_estimable", "notestimable", "not-estimable"}
         
         melted["RawValue_lower"] = melted["RawValue"].str.lower().str.strip()
         melted["IsMissing"] = melted["RawValue_lower"].isin(missing_values)
         melted["IsNotReached"] = melted["RawValue_lower"].isin(not_reached_values)
+        melted["IsNotEstimable"] = melted["RawValue_lower"].isin(not_estimable_values)
         
         # Extract numeric values - Code 2 style
         melted["Value"] = melted["RawValue"].str.replace('%', '', regex=False)
@@ -483,42 +485,69 @@ class VisualizationEngine:
         melted["PlotValue"] = melted["Value"].fillna(0)
         melted.loc[melted["IsMissing"], "PlotValue"] = 0.1
         melted.loc[melted["IsNotReached"], "PlotValue"] = 0.1
+        melted.loc[melted["IsNotEstimable"], "PlotValue"] = 0.1
         
-        # Create display text with proper NR handling - Code 2 style
+        # Create display text with proper NR and NE handling - Enhanced Code 2 style
         def create_display_text(row):
             raw_val = str(row["RawValue"]).strip()
             raw_val_lower = raw_val.lower().strip()
             
-            # First check for explicit NR patterns (Code 2 approach)
-            if (raw_val_lower in ['nr', 'not reached', 'not_reached', 'notreached', 'not-reached'] or
-                'not reached' in raw_val_lower or 
-                raw_val_lower == 'nr' or
-                raw_val.upper() == 'NR'):
+            # Debug print to see what values we're getting
+            print(f"Processing value: '{raw_val}' -> '{raw_val_lower}'")
+            
+            # First check for explicit NR patterns (Code 2 approach) - MOST COMPREHENSIVE
+            if (raw_val_lower == 'nr' or 
+                raw_val.upper() == 'NR' or
+                raw_val_lower == 'not reached' or
+                raw_val_lower == 'not_reached' or
+                raw_val_lower == 'notreached' or
+                raw_val_lower == 'not-reached' or
+                'not reached' in raw_val_lower or
+                raw_val_lower.startswith('nr') or
+                raw_val_lower.endswith('nr')):
+                print(f"Detected NR value: {raw_val}")
                 return "NR"
+            
+            # Check for explicit NE patterns (Not Estimable)
+            elif (raw_val_lower == 'ne' or 
+                raw_val.upper() == 'NE' or
+                raw_val_lower == 'not estimable' or
+                raw_val_lower == 'not_estimable' or
+                raw_val_lower == 'notestimable' or
+                raw_val_lower == 'not-estimable' or
+                'not estimable' in raw_val_lower):
+                print(f"Detected NE value: {raw_val}")
+                return "NE"
             
             # Check for missing/empty values
             elif (raw_val_lower in ['', 'na', 'n/a', 'nan', 'none', 'null', 'not available'] or
-                  raw_val_lower == 'nan' or 
-                  pd.isna(raw_val) or
-                  raw_val == '' or
-                  raw_val == 'None'):
+                raw_val_lower == 'nan' or 
+                pd.isna(raw_val) or
+                raw_val == '' or
+                raw_val == 'none' or
+                str(raw_val) == 'nan'):
+                print(f"Detected missing value: {raw_val}")
                 return "N/A"
             
             # Regular numeric or text values
             else:
-                return raw_val.upper().replace('MONTHS', '').replace('MONTH', '').strip()
+                cleaned_val = raw_val.upper().replace('MONTHS', '').replace('MONTH', '').strip()
+                print(f"Regular value: {raw_val} -> {cleaned_val}")
+                return cleaned_val
         
         melted["DisplayText"] = melted.apply(create_display_text, axis=1)
         
-        # Additional safety check for survival metrics - Code 2 approach
-        survival_metrics = melted["Metric"].str.contains("OS|PFS", case=False, na=False)
-        potentially_nr = (melted["DisplayText"] == "N/A") & survival_metrics
+        # Additional safety check for survival metrics - Code 2 approach enhanced for NE
+        survival_metrics = melted["Metric"].str.contains("OS|PFS|DoR|DOR", case=False, na=False)
+        potentially_special = (melted["DisplayText"] == "N/A") & survival_metrics
         
-        # If we find survival metrics showing N/A, check if raw value could be NR
-        for idx in melted[potentially_nr].index:
+        # If we find survival metrics showing N/A, check if raw value could be NR or NE
+        for idx in melted[potentially_special].index:
             raw_val = str(melted.loc[idx, "RawValue"]).strip().upper()
             if raw_val in ['NR', 'NOT REACHED', 'NOTREACHED', 'NOT_REACHED']:
                 melted.loc[idx, "DisplayText"] = "NR"
+            elif raw_val in ['NE', 'NOT ESTIMABLE', 'NOTESTIMABLE', 'NOT_ESTIMABLE']:
+                melted.loc[idx, "DisplayText"] = "NE"
         
         # Create color scheme - Code 2 style
         colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
