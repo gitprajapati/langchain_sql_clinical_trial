@@ -655,8 +655,7 @@ class ClinicalTrialChatbot:
                 llm, 
                 tools, 
                 prompt=system_prompt,
-                checkpointer=self.memory,
-                verbose=True
+                checkpointer=self.memory
             )
             
             # Initialize workflow
