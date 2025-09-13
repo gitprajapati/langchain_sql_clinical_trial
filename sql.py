@@ -107,8 +107,8 @@ class VisualizationEngine:
     """Handles creation of clinical trial visualizations using Code 2 design pattern."""
     
     def __init__(self):
-        self.llm = ChatOpenAI(model="gpt-4o", temperature=0)
-        self.llm_small = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        self.llm = ChatOpenAI(model="gpt-4.1", temperature=0)
+        self.llm_small = ChatOpenAI(model="gpt-4.1-mini", temperature=0)
 
     def create_dataframe_from_response(self, user_question: str, sql_response: str) -> Optional[str]:
         """Create DataFrame JSON from SQL response for visualization with proper NR handling."""
