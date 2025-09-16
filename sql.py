@@ -435,7 +435,7 @@ class VisualizationEngine:
         return final_metrics
     
     def display_bar_charts(self, df: pd.DataFrame, trial_col: str, metric_cols: List[str], key_prefix: str = ""):
-        """Display bar charts design pattern with proper NR and NE handling."""
+        """Display bar charts design pattern with proper NR and NE handling and dynamic height scaling."""
         if df.empty:
             st.info("No data available for visualization")
             return
@@ -451,6 +451,22 @@ class VisualizationEngine:
         if not available_metrics:
             st.info("No metrics available for visualization")
             return
+        
+        # Define metric types for dynamic scaling
+        months_metrics = [
+            'mfu', 'median follow-up', 'mpfs', 'median pfs', 'mos', 'median os', 
+            'mdor', 'median dor', 'median progression-free survival', 
+            'median overall survival', 'median duration of response'
+        ]
+        
+        percentage_metrics = [
+            'orr', 'overall response rate', 'cr', 'complete response', 'pr', 'partial response',
+            '1-yr pfs rate', '2-yr pfs rate', '3-yr pfs rate', '4-yr pfs rate', '5-yr pfs rate',
+            '1-yr os rate', '2-yr os rate', '3-yr os rate', '4-yr os rate', '5-yr os rate',
+            'dcr', 'disease control rate', 'key aes', 'gr 3/4 traes', 'gr ≥3 traes',
+            'gr 3/4 teaes', 'gr ≥3 teaes', 'gr 3/4 aes', 'gr ≥3 aes', 
+            'gr 3/4 iraes', 'gr ≥3 iraes', 'tx-related deaths', 'all deaths', 'all aes'
+        ]
         
         # Melt data for plotting - Code 2 style with debugging
         melted = pd.melt(df_viz[['Display_Name'] + available_metrics], 
@@ -482,11 +498,52 @@ class VisualizationEngine:
         melted["Value"] = melted["Value"].str.extract(r'([\d.]+)', expand=False)
         melted["Value"] = pd.to_numeric(melted["Value"], errors='coerce')
         
-        # Set plot values - Code 2 approach
-        melted["PlotValue"] = melted["Value"].fillna(0)
-        melted.loc[melted["IsMissing"], "PlotValue"] = 0.1
-        melted.loc[melted["IsNotReached"], "PlotValue"] = 0.1
-        melted.loc[melted["IsNotEstimable"], "PlotValue"] = 0.1
+        # Determine metric type and calculate dynamic scaling
+        def get_metric_type(metric_name):
+            metric_lower = metric_name.lower().strip()
+            if any(month_metric in metric_lower for month_metric in months_metrics):
+                return 'months'
+            elif any(pct_metric in metric_lower for pct_metric in percentage_metrics):
+                return 'percentage'
+            else:
+                return 'other'
+        
+        # Add metric type classification
+        melted["MetricType"] = melted["Metric"].apply(get_metric_type)
+        
+        # Calculate dynamic max values for scaling - CRITICAL FIX
+        months_data = melted[(melted["MetricType"] == "months") & (~melted["Value"].isna())]
+        percentage_data = melted[(melted["MetricType"] == "percentage") & (~melted["Value"].isna())]
+        other_data = melted[(melted["MetricType"] == "other") & (~melted["Value"].isna())]
+        
+        # Set dynamic max values with buffer
+        months_max = months_data["Value"].max() if not months_data.empty else 100
+        months_scale_max = months_max * 1.1  # 10% buffer above max value
+        
+        percentage_max = percentage_data["Value"].max() if not percentage_data.empty else 100
+        percentage_scale_max = min(percentage_max * 1.1, 100)  # 10% buffer but cap at 100%
+        
+        other_max = other_data["Value"].max() if not other_data.empty else 100
+        other_scale_max = other_max * 1.1  # 10% buffer above max value
+        
+        
+        # CRITICAL: Transform PlotValue based on metric type for consistent visualization
+        def calculate_normalized_plot_value(row):
+            """Normalize values to 0-100 scale for consistent bar heights within each metric type"""
+            if row["IsMissing"] or row["IsNotReached"] or row["IsNotEstimable"]:
+                return 2  # Small consistent value for special cases
+            elif pd.isna(row["Value"]):
+                return 0
+            else:
+                # Normalize to 0-100 scale based on metric type max
+                if row["MetricType"] == "months":
+                    return (row["Value"] / months_scale_max) * 100 if months_scale_max > 0 else 0
+                elif row["MetricType"] == "percentage":
+                    return (row["Value"] / percentage_scale_max) * 100 if percentage_scale_max > 0 else 0
+                else:
+                    return (row["Value"] / other_scale_max) * 100 if other_scale_max > 0 else 0
+        
+        melted["PlotValue"] = melted.apply(calculate_normalized_plot_value, axis=1)
         
         # Create display text with proper NR and NE handling - Enhanced Code 2 style
         def create_display_text(row):
@@ -600,7 +657,7 @@ class VisualizationEngine:
             )
         )
         
-        # Layout updates with improved spacing and separation
+        # Layout updates with improved spacing and consistent bar heights
         fig.update_layout(
             height=chart_height,
             showlegend=False,
@@ -612,6 +669,14 @@ class VisualizationEngine:
             font=dict(color="black", size=10)
         )
         
+        # Fix bar heights to be consistent - this prevents NR/N/A bars from being too tall
+        fig.for_each_trace(lambda trace: trace.update(
+            marker=dict(
+                line=dict(width=1, color='rgba(0,0,0,0.2)'),
+            ),
+            width=0.6  # Fixed relative width for all bars
+        ))
+        
         # Clean facet titles and improve spacing
         fig.for_each_annotation(lambda a: a.update(
             text=a.text.split("=")[-1], 
@@ -619,29 +684,21 @@ class VisualizationEngine:
             y=a.y + 0.02  # Slightly raise title position
         ))
         
-        # Update subplot spacing using the correct Plotly method
-        fig.update_xaxes(matches=None)  # Allow independent x-axes
-        fig.update_yaxes(matches=None)  # Allow independent y-axes
-        
-        # Apply proper spacing by updating the figure's subplot configuration
-        if hasattr(fig, '_subplots') and fig._subplots:
-            # For subplots created with facets, adjust spacing manually
-            fig.update_layout(
-                # Increase spacing between subplots
-                autosize=True
-            )
-        
-        # Clean axis formatting with consistent spacing
-        fig.for_each_xaxis(lambda x: x.update(
-            title='', 
-            showticklabels=False,
+        # CRITICAL FIX: Set all x-axes to 0-100 range since we normalized the data
+        # This ensures consistent visual scaling across all subplots
+        fig.update_xaxes(
+            range=[0, 100],  # All metrics now use 0-100 normalized scale
+            matches=None,  # Allow independent x-axes 
+            showticklabels=False,  # Hide tick labels since they're normalized
             gridcolor="rgba(0,0,0,0.1)",
             showgrid=True,
             zeroline=True,
-            zerolinecolor="rgba(0,0,0,0.2)"
-        ))
+            zerolinecolor="rgba(0,0,0,0.2)",
+            title=""  # Remove x-axis titles since scale is normalized
+        )
         
-        fig.for_each_yaxis(lambda y: y.update(
+        # Control y-axis to prevent single bars from being too tall
+        fig.update_yaxes(
             title='',
             tickfont=dict(size=9, color="black"),
             tickmode='linear',
@@ -649,9 +706,13 @@ class VisualizationEngine:
             tickangle=0,
             categoryorder='array',
             categoryarray=list(reversed(arm_names)),  # Consistent ordering
-            showgrid=False
-        ))
+            showgrid=False,
+            matches=None,  # Allow independent y-axes
+            # Force consistent categorical spacing - prevents single bars from stretching
+            range=[-0.5, len(arm_names) - 0.5] if len(arm_names) > 1 else [-0.5, 0.5]
+        )
         
+
         st.plotly_chart(fig, use_container_width=True, key=f"{key_prefix}_chart")
 
 class ClinicalTrialChatbot:
@@ -855,6 +916,8 @@ CLINICAL OUTCOMES DEFINITIONS:
 - **mOS** = Median Overall Survival (time until death)
 - **mDoR** = Median Duration of Response (how long responses last)
 - **DCR** = Disease Control Rate (patients with stable or shrinking disease)
+- **Gr 3/4 TRAEs** = Grade 3 or 4 Treatment-Related Adverse Events
+- **Gr ≥3 TRAEs** = Grade 3 and above Treatment-Related Adverse Events
 
 **SAFETY OUTCOMES:**
 - **Gr ≥3 TRAEs** = Grade 3 and above Treatment-Related Adverse Events
