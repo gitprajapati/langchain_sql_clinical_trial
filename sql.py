@@ -108,7 +108,7 @@ class VisualizationEngine:
     
     def __init__(self):
         self.llm = ChatOpenAI(model="gpt-4.1", temperature=0)
-        self.llm_small = ChatOpenAI(model="gpt-4.1-mini", temperature=0)
+        self.llm_small = ChatOpenAI(model="gpt-4.1", temperature=0)
 
     def create_dataframe_from_response(self, user_question: str, sql_response: str) -> Optional[str]:
         """Create DataFrame JSON from SQL response for visualization with proper NR handling."""
@@ -126,7 +126,8 @@ class VisualizationEngine:
         4. For survival endpoints (PFS, OS, DoR), preserve "NR" or "Not reached" values EXACTLY as "NR" - do NOT convert to null
         5. Handle other missing values as null
         6. Structure should be: {{"Treatment": [...], "Metric1": [...], "Metric2": [...]}}
-        
+        7. Do not round off or change metric values.
+                                                 
         CRITICAL: For survival metrics (mPFS, mOS, mDoR), if you see "NR", "Not reached", "NE", or "Not estimable", 
         preserve these EXACTLY as they appear in the output JSON. Do not convert them to null or empty strings.
         
@@ -558,37 +559,38 @@ class VisualizationEngine:
         
         arm_color_map = {name: colors[i % len(colors)] for i, name in enumerate(arm_names)}
         
-        # Calculate dimensions - Code 2 style
+        # Calculate dimensions with constant bar height
         num_metrics = len(available_metrics)
         num_arms = len(df_viz)
         
-        if num_arms <= 2:
-            base_height_per_arm = 60
-            min_height = 300
-        elif num_arms <= 4:
-            base_height_per_arm = 80
-            min_height = 400
-        else:
-            base_height_per_arm = 100
-            min_height = 500
+        # Fixed bar height approach - constant height regardless of number of metrics
+        fixed_bar_height = 40  # Constant bar height in pixels
+        spacing_between_bars = 10  # Space between treatment arms
+        spacing_between_facets = 60  # Space between metric groups
         
-        chart_height = max(min_height, base_height_per_arm * num_arms + 150)
+        # Calculate total height based on constant bar dimensions
+        bars_height = num_arms * fixed_bar_height + (num_arms - 1) * spacing_between_bars
+        facet_rows = (num_metrics + 5) // 6  # 6 metrics per row
+        total_chart_height = facet_rows * (bars_height + spacing_between_facets) + 120  # Extra for titles/margins
         
-        # Create bar chart - Code 2 style
+        # Ensure minimum height for readability
+        chart_height = max(total_chart_height, 400)
+        
+        # Create bar chart with 6 metrics per row, starting from left
         fig = px.bar(
             melted,
             x="PlotValue",
             y="Display_Name",
             color="Display_Name",
             facet_col="Metric",
-            facet_col_wrap=min(num_metrics, 4),
+            facet_col_wrap=6,  # 6 parameters per row
             orientation="h",
             text="DisplayText",
             color_discrete_map=arm_color_map,
             title=f"Clinical Metrics Comparison"
         )
         
-        # Update traces - Code 2 style
+        # Update traces with consistent bar styling
         fig.update_traces(
             textposition="outside",
             textfont=dict(size=10, color="black"),
@@ -598,27 +600,45 @@ class VisualizationEngine:
             )
         )
         
-        # Layout updates - Code 2 style
+        # Layout updates with improved spacing and separation
         fig.update_layout(
             height=chart_height,
             showlegend=False,
-            margin=dict(l=400, r=150, t=100, b=50),
+            margin=dict(l=250, r=120, t=80, b=40),  # Adjusted margins for better left alignment
             plot_bgcolor="white",
             paper_bgcolor="white",
-            bargap=0.3 if num_arms <= 2 else 0.2,
-            font=dict(color="black")
+            bargap=0.4,  # Increased gap between bars for better separation
+            bargroupgap=0.1,  # Gap between bar groups
+            font=dict(color="black", size=10)
         )
         
-        # Clean facet titles - Code 2 style
+        # Clean facet titles and improve spacing
         fig.for_each_annotation(lambda a: a.update(
             text=a.text.split("=")[-1], 
-            font=dict(size=12, color="black")
+            font=dict(size=11, color="black", weight="bold"),
+            y=a.y + 0.02  # Slightly raise title position
         ))
         
+        # Update subplot spacing using the correct Plotly method
+        fig.update_xaxes(matches=None)  # Allow independent x-axes
+        fig.update_yaxes(matches=None)  # Allow independent y-axes
+        
+        # Apply proper spacing by updating the figure's subplot configuration
+        if hasattr(fig, '_subplots') and fig._subplots:
+            # For subplots created with facets, adjust spacing manually
+            fig.update_layout(
+                # Increase spacing between subplots
+                autosize=True
+            )
+        
+        # Clean axis formatting with consistent spacing
         fig.for_each_xaxis(lambda x: x.update(
             title='', 
             showticklabels=False,
-            gridcolor="rgba(0,0,0,0.1)"
+            gridcolor="rgba(0,0,0,0.1)",
+            showgrid=True,
+            zeroline=True,
+            zerolinecolor="rgba(0,0,0,0.2)"
         ))
         
         fig.for_each_yaxis(lambda y: y.update(
@@ -626,7 +646,10 @@ class VisualizationEngine:
             tickfont=dict(size=9, color="black"),
             tickmode='linear',
             automargin=True,
-            tickangle=0
+            tickangle=0,
+            categoryorder='array',
+            categoryarray=list(reversed(arm_names)),  # Consistent ordering
+            showgrid=False
         ))
         
         st.plotly_chart(fig, use_container_width=True, key=f"{key_prefix}_chart")
