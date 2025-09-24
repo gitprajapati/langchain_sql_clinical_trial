@@ -435,12 +435,12 @@ class VisualizationEngine:
         return final_metrics
     
     def display_bar_charts(self, df: pd.DataFrame, trial_col: str, metric_cols: List[str], key_prefix: str = ""):
-        """Display bar charts design pattern with proper NR and NE handling and dynamic height scaling."""
+        """Display bar charts with TRULY constant bar thickness regardless of number of treatments."""
         if df.empty:
             st.info("No data available for visualization")
             return
         
-        # Create display names - Code 2 style
+        # Create display names
         if 'Display_Name' not in df.columns:
             df['Display_Name'] = df[trial_col].apply(lambda x: str(x)[:70])
         
@@ -468,22 +468,17 @@ class VisualizationEngine:
             'gr 3/4 iraes', 'gr ≥3 iraes', 'tx-related deaths', 'all deaths', 'all aes'
         ]
         
-        # Melt data for plotting - Code 2 style with debugging
+        # Melt data for plotting
         melted = pd.melt(df_viz[['Display_Name'] + available_metrics], 
                         id_vars='Display_Name',
                         var_name="Metric", 
                         value_name="RawValue")
         
-        # Debug: Print the raw values before processing
-        print("Raw values in melted data:")
-        print(melted[['Display_Name', 'Metric', 'RawValue']].head(10))
-        
-        # Clean and process values - Code 2 style
+        # Clean and process values
         melted["RawValue"] = melted["RawValue"].astype(str).str.strip()
         
         # Define missing values - EXCLUDE "NR", "NE", and "Not Reached" from missing values
         missing_values = {"", "na", "n/a", "nan", "none", "null", "not available"}
-        # Define "Not Reached" and "Not Estimable" values separately
         not_reached_values = {"nr", "not reached", "not_reached", "notreached", "not-reached"}
         not_estimable_values = {"ne", "not estimable", "not_estimable", "notestimable", "not-estimable"}
         
@@ -492,13 +487,13 @@ class VisualizationEngine:
         melted["IsNotReached"] = melted["RawValue_lower"].isin(not_reached_values)
         melted["IsNotEstimable"] = melted["RawValue_lower"].isin(not_estimable_values)
         
-        # Extract numeric values - Code 2 style
+        # Extract numeric values
         melted["Value"] = melted["RawValue"].str.replace('%', '', regex=False)
         melted["Value"] = melted["Value"].str.replace('months', '', regex=False)
         melted["Value"] = melted["Value"].str.extract(r'([\d.]+)', expand=False)
         melted["Value"] = pd.to_numeric(melted["Value"], errors='coerce')
         
-        # Determine metric type and calculate dynamic scaling
+        # Determine metric type
         def get_metric_type(metric_name):
             metric_lower = metric_name.lower().strip()
             if any(month_metric in metric_lower for month_metric in months_metrics):
@@ -508,34 +503,30 @@ class VisualizationEngine:
             else:
                 return 'other'
         
-        # Add metric type classification
         melted["MetricType"] = melted["Metric"].apply(get_metric_type)
         
-        # Calculate dynamic max values for scaling - CRITICAL FIX
+        # Calculate dynamic max values for scaling
         months_data = melted[(melted["MetricType"] == "months") & (~melted["Value"].isna())]
         percentage_data = melted[(melted["MetricType"] == "percentage") & (~melted["Value"].isna())]
         other_data = melted[(melted["MetricType"] == "other") & (~melted["Value"].isna())]
         
-        # Set dynamic max values with buffer
         months_max = months_data["Value"].max() if not months_data.empty else 100
-        months_scale_max = months_max * 1.1  # 10% buffer above max value
+        months_scale_max = months_max * 1.1
         
         percentage_max = percentage_data["Value"].max() if not percentage_data.empty else 100
-        percentage_scale_max = min(percentage_max * 1.1, 100)  # 10% buffer but cap at 100%
+        percentage_scale_max = min(percentage_max * 1.1, 100)
         
         other_max = other_data["Value"].max() if not other_data.empty else 100
-        other_scale_max = other_max * 1.1  # 10% buffer above max value
+        other_scale_max = other_max * 1.1
         
-        
-        # CRITICAL: Transform PlotValue based on metric type for consistent visualization
+        # Transform PlotValue based on metric type for consistent visualization
         def calculate_normalized_plot_value(row):
             """Normalize values to 0-100 scale for consistent bar heights within each metric type"""
             if row["IsMissing"] or row["IsNotReached"] or row["IsNotEstimable"]:
-                return 2  # Small consistent value for special cases
+                return 2
             elif pd.isna(row["Value"]):
                 return 0
             else:
-                # Normalize to 0-100 scale based on metric type max
                 if row["MetricType"] == "months":
                     return (row["Value"] / months_scale_max) * 100 if months_scale_max > 0 else 0
                 elif row["MetricType"] == "percentage":
@@ -545,15 +536,11 @@ class VisualizationEngine:
         
         melted["PlotValue"] = melted.apply(calculate_normalized_plot_value, axis=1)
         
-        # Create display text with proper NR and NE handling - Enhanced Code 2 style
+        # Create display text with proper NR and NE handling
         def create_display_text(row):
             raw_val = str(row["RawValue"]).strip()
             raw_val_lower = raw_val.lower().strip()
             
-            # Debug print to see what values we're getting
-            print(f"Processing value: '{raw_val}' -> '{raw_val_lower}'")
-            
-            # First check for explicit NR patterns (Code 2 approach) - MOST COMPREHENSIVE
             if (raw_val_lower == 'nr' or 
                 raw_val.upper() == 'NR' or
                 raw_val_lower == 'not reached' or
@@ -563,10 +550,8 @@ class VisualizationEngine:
                 'not reached' in raw_val_lower or
                 raw_val_lower.startswith('nr') or
                 raw_val_lower.endswith('nr')):
-                print(f"Detected NR value: {raw_val}")
                 return "NR"
             
-            # Check for explicit NE patterns (Not Estimable)
             elif (raw_val_lower == 'ne' or 
                 raw_val.upper() == 'NE' or
                 raw_val_lower == 'not estimable' or
@@ -574,32 +559,26 @@ class VisualizationEngine:
                 raw_val_lower == 'notestimable' or
                 raw_val_lower == 'not-estimable' or
                 'not estimable' in raw_val_lower):
-                print(f"Detected NE value: {raw_val}")
                 return "NE"
             
-            # Check for missing/empty values
             elif (raw_val_lower in ['', 'na', 'n/a', 'nan', 'none', 'null', 'not available'] or
                 raw_val_lower == 'nan' or 
                 pd.isna(raw_val) or
                 raw_val == '' or
                 raw_val == 'none' or
                 str(raw_val) == 'nan'):
-                print(f"Detected missing value: {raw_val}")
                 return "N/A"
             
-            # Regular numeric or text values
             else:
                 cleaned_val = raw_val.upper().replace('MONTHS', '').replace('MONTH', '').strip()
-                print(f"Regular value: {raw_val} -> {cleaned_val}")
                 return cleaned_val
         
         melted["DisplayText"] = melted.apply(create_display_text, axis=1)
         
-        # Additional safety check for survival metrics - Code 2 approach enhanced for NE
+        # Additional safety check for survival metrics
         survival_metrics = melted["Metric"].str.contains("OS|PFS|DoR|DOR", case=False, na=False)
         potentially_special = (melted["DisplayText"] == "N/A") & survival_metrics
         
-        # If we find survival metrics showing N/A, check if raw value could be NR or NE
         for idx in melted[potentially_special].index:
             raw_val = str(melted.loc[idx, "RawValue"]).strip().upper()
             if raw_val in ['NR', 'NOT REACHED', 'NOTREACHED', 'NOT_REACHED']:
@@ -607,111 +586,138 @@ class VisualizationEngine:
             elif raw_val in ['NE', 'NOT ESTIMABLE', 'NOTESTIMABLE', 'NOT_ESTIMABLE']:
                 melted.loc[idx, "DisplayText"] = "NE"
         
-        # Create color scheme - Code 2 style
+        # SIMPLE FIX: Force all subplots to have identical y-axis structure
+        # This prevents Plotly from auto-adjusting subplot heights
+        
+        # Get all unique treatments across the entire dataset
+        all_treatments = melted['Display_Name'].unique().tolist()
+        
+        # For each metric, ensure all treatments are present (add missing ones with zero values)
+        complete_data = []
+        for metric in available_metrics:
+            metric_data = melted[melted['Metric'] == metric]
+            existing_treatments = metric_data['Display_Name'].tolist()
+            
+            # Add the existing data
+            complete_data.append(metric_data)
+            
+            # Add missing treatments with zero/empty values
+            for treatment in all_treatments:
+                if treatment not in existing_treatments:
+                    missing_row = pd.DataFrame({
+                        'Display_Name': [treatment],
+                        'Metric': [metric],
+                        'RawValue': [''],
+                        'PlotValue': [0],  # Zero height bar
+                        'DisplayText': [''],  # No label
+                        'MetricType': [metric_data['MetricType'].iloc[0] if not metric_data.empty else 'other']
+                    })
+                    complete_data.append(missing_row)
+        
+        # Combine all data
+        melted = pd.concat(complete_data, ignore_index=True)
+        
+        # Create color scheme
         colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
-        arm_names = melted['Display_Name'].unique()
         
-        while len(colors) < len(arm_names):
-            colors.extend(colors)
+        # Get actual treatments (not the padded ones)
+        actual_arms = all_treatments  # Use all treatments found in data
         
-        arm_color_map = {name: colors[i % len(colors)] for i, name in enumerate(arm_names)}
+        # Color map for all treatments
+        arm_color_map = {name: colors[i % len(colors)] for i, name in enumerate(actual_arms)}
         
-        # Calculate dimensions with constant bar height
+        # Calculate chart dimensions based on ACTUAL data
         num_metrics = len(available_metrics)
-        num_arms = len(df_viz)
+        num_treatments = len(actual_arms)  # Use actual number, not artificial limit
+        metrics_per_row = 6
+        metric_rows = (num_metrics + metrics_per_row - 1) // metrics_per_row
         
-        # Fixed bar height approach - constant height regardless of number of metrics
-        fixed_bar_height = 40  # Constant bar height in pixels
-        spacing_between_bars = 10  # Space between treatment arms
-        spacing_between_facets = 60  # Space between metric groups
+        # DYNAMIC HEIGHT: Scale with actual number of treatments
+        # Each treatment gets consistent space regardless of total count
+        BASE_HEIGHT_PER_TREATMENT = 35  # Consistent height per treatment
+        SPACING_PER_SUBPLOT = 80  # Fixed spacing between subplots
+        MARGIN_HEIGHT = 120  # Fixed margins
         
-        # Calculate total height based on constant bar dimensions
-        bars_height = num_arms * fixed_bar_height + (num_arms - 1) * spacing_between_bars
-        facet_rows = (num_metrics + 5) // 6  # 6 metrics per row
-        total_chart_height = facet_rows * (bars_height + spacing_between_facets) + 120  # Extra for titles/margins
+        subplot_height = (num_treatments * BASE_HEIGHT_PER_TREATMENT) + SPACING_PER_SUBPLOT
+        chart_height = (metric_rows * subplot_height) + MARGIN_HEIGHT
         
-        # Ensure minimum height for readability
-        chart_height = max(total_chart_height, 400)
-        
-        # Create bar chart with 6 metrics per row, starting from left
+        # Create bar chart with faceting
         fig = px.bar(
             melted,
             x="PlotValue",
             y="Display_Name",
             color="Display_Name",
             facet_col="Metric",
-            facet_col_wrap=6,  # 6 parameters per row
+            facet_col_wrap=metrics_per_row,
             orientation="h",
             text="DisplayText",
             color_discrete_map=arm_color_map,
             title=f"Clinical Metrics Comparison"
         )
         
-        # Update traces with consistent bar styling
+        # Update traces - constant styling
         fig.update_traces(
             textposition="outside",
             textfont=dict(size=10, color="black"),
             cliponaxis=False,
-            marker=dict(
-                line=dict(width=1, color='rgba(0,0,0,0.2)')
-            )
+            marker=dict(line=dict(width=1, color='rgba(0,0,0,0.2)')),
+            # CRITICAL: Fixed bar width
+            width=0.6  # Constant width for all bars
         )
         
-        # Layout updates with improved spacing and consistent bar heights
+        # CRITICAL: Remove dummy entry handling - no longer needed
+        # Since we're not using artificial dummy categories
+        
+        # Layout with DYNAMIC dimensions based on actual data
         fig.update_layout(
-            height=chart_height,
+            height=chart_height,  # Scales with actual number of treatments
             showlegend=False,
-            margin=dict(l=250, r=120, t=80, b=40),  # Adjusted margins for better left alignment
+            margin=dict(l=250, r=120, t=80, b=40),
             plot_bgcolor="white",
             paper_bgcolor="white",
-            bargap=0.4,  # Increased gap between bars for better separation
-            bargroupgap=0.1,  # Gap between bar groups
+            # CRITICAL: Consistent bar gaps regardless of number of treatments
+            bargap=0.15,  # Fixed gap ratio
+            bargroupgap=0.1,
             font=dict(color="black", size=10)
         )
         
-        # Fix bar heights to be consistent - this prevents NR/N/A bars from being too tall
-        fig.for_each_trace(lambda trace: trace.update(
-            marker=dict(
-                line=dict(width=1, color='rgba(0,0,0,0.2)'),
-            ),
-            width=0.6  # Fixed relative width for all bars
-        ))
+        # CRITICAL: Y-axis uses ACTUAL data structure without artificial limits
+        fig.update_yaxes(
+            title='',
+            tickfont=dict(size=9, color="black"),
+            automargin=True,
+            tickangle=0,
+            categoryorder='array',
+            categoryarray=list(reversed(actual_arms)),  # Use actual treatments only
+            showgrid=False,
+            # DYNAMIC: Range based on actual number of treatments
+            range=[-0.5, len(actual_arms) - 0.5],  # Scales with real data
+            dtick=1,
+            type='category',
+            # Show all actual treatment names
+            tickmode='array',
+            tickvals=list(range(len(actual_arms))),
+            ticktext=list(reversed(actual_arms))
+        )
         
-        # Clean facet titles and improve spacing
-        fig.for_each_annotation(lambda a: a.update(
-            text=a.text.split("=")[-1], 
-            font=dict(size=11, color="black", weight="bold"),
-            y=a.y + 0.02  # Slightly raise title position
-        ))
-        
-        # CRITICAL FIX: Set all x-axes to 0-100 range since we normalized the data
-        # This ensures consistent visual scaling across all subplots
+        # Set x-axes
         fig.update_xaxes(
-            range=[0, 100],  # All metrics now use 0-100 normalized scale
-            matches=None,  # Allow independent x-axes 
-            showticklabels=False,  # Hide tick labels since they're normalized
+            range=[0, 100],
+            matches=None,
+            showticklabels=False,
             gridcolor="rgba(0,0,0,0.1)",
             showgrid=True,
             zeroline=True,
             zerolinecolor="rgba(0,0,0,0.2)",
-            title=""  # Remove x-axis titles since scale is normalized
+            title=""
         )
         
-        # Control y-axis to prevent single bars from being too tall
-        fig.update_yaxes(
-            title='',
-            tickfont=dict(size=9, color="black"),
-            tickmode='linear',
-            automargin=True,
-            tickangle=0,
-            categoryorder='array',
-            categoryarray=list(reversed(arm_names)),  # Consistent ordering
-            showgrid=False,
-            matches=None,  # Allow independent y-axes
-            # Force consistent categorical spacing - prevents single bars from stretching
-            range=[-0.5, len(arm_names) - 0.5] if len(arm_names) > 1 else [-0.5, 0.5]
-        )
-        
+        # Clean facet titles
+        fig.for_each_annotation(lambda a: a.update(
+            text=a.text.split("=")[-1], 
+            font=dict(size=11, color="black", weight="bold"),
+            y=a.y + 0.02
+        ))
 
         st.plotly_chart(fig, use_container_width=True, key=f"{key_prefix}_chart")
 
@@ -969,6 +975,7 @@ SEARCH STRATEGY FOR ANY QUERY:
 - Provide complete answer based on complete data.
 
 -  ** For Handle Comparator Queries only:**
+    *   If only a molecule name is mentioned consider it as monotherapy
     *   If you **do not** find the requested regimen in any Product/Regimen Name field, then check if it is mentioned in the Comparator field of any object.
     *   If you find it in a Comparator field, you MUST respond by:
         a. Stating clearly that the dataset **does not contain the specific performance data for the requested arm** (the comparator).
