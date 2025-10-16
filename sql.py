@@ -1094,14 +1094,17 @@ def create_visualization(viz_data: Dict[str, Any], message_idx: int):
 def main():
     """Main application function."""
     
-    # Clean header section - Code 2 style
-    # Clean header section with logo
+    # Clean header section with logos on both sides
     col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col1:
+        st.image("blue_logo1.jpeg", width=150)  # Left logo
+    
     with col2:
-        st.image("Oncofocus New Logo - Transparent.png", width=300)  # Adjust width as needed
-        
-    st.markdown('<h1 class="main-header">🔬 Clinical Trial AI Assistant</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="subtitle">Ask questions about clinical trial data with intelligent visualizations</p>', unsafe_allow_html=True)
+        st.markdown('<h1 class="main-header">🔬 Clinical Trial AI Assistant</h1>', unsafe_allow_html=True)
+    
+    with col3:
+        st.image("Oncofocus New Logo - Transparent.png", width=150)  # Right logo
     
     # Initialize chatbot
     if 'chatbot' not in st.session_state:
