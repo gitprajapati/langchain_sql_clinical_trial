@@ -1095,6 +1095,11 @@ def main():
     """Main application function."""
     
     # Clean header section - Code 2 style
+    # Clean header section with logo
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.image("Oncofocus New Logo - Transparent.png", width=300)  # Adjust width as needed
+        
     st.markdown('<h1 class="main-header">🔬 Clinical Trial AI Assistant</h1>', unsafe_allow_html=True)
     st.markdown('<p class="subtitle">Ask questions about clinical trial data with intelligent visualizations</p>', unsafe_allow_html=True)
     
