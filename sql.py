@@ -37,6 +37,35 @@ st.set_page_config(
 # Custom CSS for clean UI - matching code 2 style
 st.markdown("""
 <style>
+    /* Force light theme - disable dark mode */
+    [data-testid="stAppViewContainer"] {
+        background-color: #FFFFFF !important;
+    }
+    [data-testid="stHeader"] {
+        background-color: #FFFFFF !important;
+    }
+    [data-testid="stToolbar"] {
+        background-color: #FFFFFF !important;
+    }
+    body {
+        background-color: #FFFFFF !important;
+        color: #262730 !important;
+    }
+    /* Override system dark mode preference */
+    @media (prefers-color-scheme: dark) {
+        [data-testid="stAppViewContainer"],
+        [data-testid="stHeader"],
+        body {
+            background-color: #FFFFFF !important;
+            color: #262730 !important;
+        }
+        .stChatMessage {
+            background-color: #F0F2F6 !important;
+            color: #262730 !important;
+        }
+    }
+    
+    /* Your existing styles */
     .main-header {
         font-size: 2.5rem;
         color: #1f77b4;
