@@ -37,55 +37,53 @@ st.set_page_config(
 # Custom CSS for clean UI - matching code 2 style
 st.markdown("""
 <style>
-    /* Force light theme - disable dark mode */
-    [data-testid="stAppViewContainer"] {
-        background-color: #FFFFFF !important;
+    /* FORCE WHITE BACKGROUND EVERYWHERE - AGGRESSIVE OVERRIDE */
+    * {
+        scrollbar-color: #888 #f1f1f1 !important;
     }
-    [data-testid="stHeader"] {
-        background-color: #FFFFFF !important;
-    }
-    [data-testid="stToolbar"] {
-        background-color: #FFFFFF !important;
-    }
+    
+    [data-testid="stAppViewContainer"],
+    [data-testid="stHeader"],
+    [data-testid="stToolbar"],
+    [data-testid="stBottom"],
+    [data-testid="stChatInputContainer"],
+    section[data-testid="stBottomBlockContainer"],
+    .main,
     body {
         background-color: #FFFFFF !important;
         color: #262730 !important;
     }
     
-    /* Fix black chat input bar - ADD THESE LINES */
-    [data-testid="stChatInputContainer"] {
-        background-color: #FFFFFF !important;
-    }
-    [data-testid="stBottom"] {
-        background-color: #FFFFFF !important;
-    }
-    .stChatInput {
-        background-color: #FFFFFF !important;
-    }
-    .stChatInput > div {
-        background-color: #FFFFFF !important;
-        border-radius: 25px;
-    }
-    .stChatInput input {
+    /* Chat input - multiple selectors */
+    .stChatFloatingInputContainer,
+    .stChatInput,
+    .stChatInput > div,
+    [data-testid="stChatInput"],
+    [data-testid="stChatInputTextArea"],
+    .stTextInput > div > div,
+    textarea {
         background-color: #FFFFFF !important;
         color: #262730 !important;
+        border-color: #E0E0E0 !important;
     }
     
-    /* Override system dark mode preference */
+    /* Bottom container - nuclear option */
+    div[class*="bottom"] {
+        background-color: #FFFFFF !important;
+    }
+    
+    /* Override ALL dark mode */
     @media (prefers-color-scheme: dark) {
+        *,
         [data-testid="stAppViewContainer"],
         [data-testid="stHeader"],
-        [data-testid="stChatInputContainer"],
         [data-testid="stBottom"],
-        body {
-            background-color: #FFFFFF !important;
-            color: #262730 !important;
-        }
-        .stChatMessage {
-            background-color: #F0F2F6 !important;
-            color: #262730 !important;
-        }
-        .stChatInput, .stChatInput > div, .stChatInput input {
+        [data-testid="stChatInputContainer"],
+        section[data-testid="stBottomBlockContainer"],
+        .stChatInput,
+        .stChatInput > div,
+        body,
+        .main {
             background-color: #FFFFFF !important;
             color: #262730 !important;
         }
@@ -111,9 +109,11 @@ st.markdown("""
     .stChatMessage {
         border-radius: 10px;
         margin-bottom: 1rem;
+        background-color: #F0F2F6 !important;
     }
     .stChatInput > div {
         border-radius: 25px;
+        background-color: #FFFFFF !important;
     }
     .visualization-container {
         border: 1px solid #ddd;
