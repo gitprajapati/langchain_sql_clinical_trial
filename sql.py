@@ -34,31 +34,61 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# Custom CSS for clean UI - matching code 2 style
 st.markdown("""
 <style>
-    /* ------------------------------------------- */
-    /* NEW: Explicitly set ALL body text to black */
-    /* ------------------------------------------- */
-    body {
-        color: black; 
+    /* --- CRITICAL: Force Light Theme Text/Background --- */
+    .stApp {
+        background-color: white; /* Ensure main app background is white */
+        color: black;          /* Ensure main text is black */
     }
     .main {
         color: black; 
     }
-    .stApp {
-        color: black; 
-        background-color: white; /* Ensure white background for the whole app */
+    .stChatMessage p {
+        color: black !important; /* Force text in chat bubbles to be black */
     }
-    /* ------------------------------------------- */
+    /* --- End Critical Fixes --- */
 
     .main-header {
         font-size: 2.5rem;
-        color: #1f77b4; /* This one is blue, which is fine */
+        color: #1f77b4;
         text-align: center;
         margin-bottom: 2rem;
         font-weight: 600;
     }
-    /* ... (rest of your existing styles) ... */
+    .subtitle {
+        text-align: center;
+        color: #666;
+        margin-bottom: 2rem;
+        font-size: 1.1rem;
+    }
+    .stChatMessage {
+        border-radius: 10px;
+        margin-bottom: 1rem;
+        /* The border-color is important for light mode appearance */
+        border: 1px solid #ddd; 
+    }
+    .stChatInput > div {
+        border-radius: 25px;
+    }
+    .visualization-container {
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1rem 0;
+        background-color: #fafafa;
+    }
+    .metric-card {
+        background-color: white;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    .stProgress > div > div > div > div {
+        background-color: #1f77b4;
+    }
 </style>
 """, unsafe_allow_html=True)
 
