@@ -51,16 +51,42 @@ st.markdown("""
         background-color: #FFFFFF !important;
         color: #262730 !important;
     }
+    
+    /* Fix black chat input bar - ADD THESE LINES */
+    [data-testid="stChatInputContainer"] {
+        background-color: #FFFFFF !important;
+    }
+    [data-testid="stBottom"] {
+        background-color: #FFFFFF !important;
+    }
+    .stChatInput {
+        background-color: #FFFFFF !important;
+    }
+    .stChatInput > div {
+        background-color: #FFFFFF !important;
+        border-radius: 25px;
+    }
+    .stChatInput input {
+        background-color: #FFFFFF !important;
+        color: #262730 !important;
+    }
+    
     /* Override system dark mode preference */
     @media (prefers-color-scheme: dark) {
         [data-testid="stAppViewContainer"],
         [data-testid="stHeader"],
+        [data-testid="stChatInputContainer"],
+        [data-testid="stBottom"],
         body {
             background-color: #FFFFFF !important;
             color: #262730 !important;
         }
         .stChatMessage {
             background-color: #F0F2F6 !important;
+            color: #262730 !important;
+        }
+        .stChatInput, .stChatInput > div, .stChatInput input {
+            background-color: #FFFFFF !important;
             color: #262730 !important;
         }
     }
