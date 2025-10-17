@@ -37,56 +37,12 @@ st.set_page_config(
 # Custom CSS for clean UI - matching code 2 style
 st.markdown("""
 <style>
-    /* FORCE WHITE BACKGROUND EVERYWHERE - AGGRESSIVE OVERRIDE */
-    * {
-        scrollbar-color: #888 #f1f1f1 !important;
+    /* Simple light mode enforcement */
+    [data-testid="stAppViewContainer"] {
+        background-color: #FFFFFF;
     }
-    
-    [data-testid="stAppViewContainer"],
-    [data-testid="stHeader"],
-    [data-testid="stToolbar"],
-    [data-testid="stBottom"],
-    [data-testid="stChatInputContainer"],
-    section[data-testid="stBottomBlockContainer"],
-    .main,
-    body {
-        background-color: #FFFFFF !important;
-        color: #262730 !important;
-    }
-    
-    /* Chat input - multiple selectors */
-    .stChatFloatingInputContainer,
-    .stChatInput,
-    .stChatInput > div,
-    [data-testid="stChatInput"],
-    [data-testid="stChatInputTextArea"],
-    .stTextInput > div > div,
-    textarea {
-        background-color: #FFFFFF !important;
-        color: #262730 !important;
-        border-color: #E0E0E0 !important;
-    }
-    
-    /* Bottom container - nuclear option */
-    div[class*="bottom"] {
-        background-color: #FFFFFF !important;
-    }
-    
-    /* Override ALL dark mode */
-    @media (prefers-color-scheme: dark) {
-        *,
-        [data-testid="stAppViewContainer"],
-        [data-testid="stHeader"],
-        [data-testid="stBottom"],
-        [data-testid="stChatInputContainer"],
-        section[data-testid="stBottomBlockContainer"],
-        .stChatInput,
-        .stChatInput > div,
-        body,
-        .main {
-            background-color: #FFFFFF !important;
-            color: #262730 !important;
-        }
+    [data-testid="stHeader"] {
+        background-color: #FFFFFF;
     }
     
     /* Your existing styles */
@@ -109,11 +65,9 @@ st.markdown("""
     .stChatMessage {
         border-radius: 10px;
         margin-bottom: 1rem;
-        background-color: #F0F2F6 !important;
     }
     .stChatInput > div {
         border-radius: 25px;
-        background-color: #FFFFFF !important;
     }
     .visualization-container {
         border: 1px solid #ddd;
