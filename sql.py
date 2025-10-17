@@ -37,15 +37,6 @@ st.set_page_config(
 # Custom CSS for clean UI - matching code 2 style
 st.markdown("""
 <style>
-    /* Simple light mode enforcement */
-    [data-testid="stAppViewContainer"] {
-        background-color: #FFFFFF;
-    }
-    [data-testid="stHeader"] {
-        background-color: #FFFFFF;
-    }
-    
-    /* Your existing styles */
     .main-header {
         font-size: 2.5rem;
         color: #1f77b4;
@@ -58,9 +49,6 @@ st.markdown("""
         color: #666;
         margin-bottom: 2rem;
         font-size: 1.1rem;
-    }
-    .css-1d391kg {
-        display: none;
     }
     .stChatMessage {
         border-radius: 10px;
@@ -75,19 +63,6 @@ st.markdown("""
         padding: 1rem;
         margin: 1rem 0;
         background-color: #fafafa;
-    }
-    .chat-message {
-        padding: 1.5rem;
-        border-radius: 10px;
-        margin-bottom: 1rem;
-    }
-    .user-message {
-        background-color: #e6f3ff;
-        margin-left: 20%;
-    }
-    .assistant-message {
-        background-color: #f0f2f6;
-        margin-right: 20%;
     }
     .metric-card {
         background-color: white;
