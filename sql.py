@@ -34,46 +34,31 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS for clean UI - matching code 2 style
 st.markdown("""
 <style>
+    /* ------------------------------------------- */
+    /* NEW: Explicitly set ALL body text to black */
+    /* ------------------------------------------- */
+    body {
+        color: black; 
+    }
+    .main {
+        color: black; 
+    }
+    .stApp {
+        color: black; 
+        background-color: white; /* Ensure white background for the whole app */
+    }
+    /* ------------------------------------------- */
+
     .main-header {
         font-size: 2.5rem;
-        color: #1f77b4;
+        color: #1f77b4; /* This one is blue, which is fine */
         text-align: center;
         margin-bottom: 2rem;
         font-weight: 600;
     }
-    .subtitle {
-        text-align: center;
-        color: #666;
-        margin-bottom: 2rem;
-        font-size: 1.1rem;
-    }
-    .stChatMessage {
-        border-radius: 10px;
-        margin-bottom: 1rem;
-    }
-    .stChatInput > div {
-        border-radius: 25px;
-    }
-    .visualization-container {
-        border: 1px solid #ddd;
-        border-radius: 10px;
-        padding: 1rem;
-        margin: 1rem 0;
-        background-color: #fafafa;
-    }
-    .metric-card {
-        background-color: white;
-        padding: 1rem;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        text-align: center;
-    }
-    .stProgress > div > div > div > div {
-        background-color: #1f77b4;
-    }
+    /* ... (rest of your existing styles) ... */
 </style>
 """, unsafe_allow_html=True)
 
