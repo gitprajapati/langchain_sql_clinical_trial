@@ -37,19 +37,6 @@ st.set_page_config(
 # Custom CSS for clean UI - matching code 2 style
 st.markdown("""
 <style>
-    /* --- CRITICAL: Force Light Theme Text/Background --- */
-    .stApp {
-        background-color: white; /* Ensure main app background is white */
-        color: black;          /* Ensure main text is black */
-    }
-    .main {
-        color: black; 
-    }
-    .stChatMessage p {
-        color: black !important; /* Force text in chat bubbles to be black */
-    }
-    /* --- End Critical Fixes --- */
-
     .main-header {
         font-size: 2.5rem;
         color: #1f77b4;
@@ -63,11 +50,12 @@ st.markdown("""
         margin-bottom: 2rem;
         font-size: 1.1rem;
     }
+    .css-1d391kg {
+        display: none;
+    }
     .stChatMessage {
         border-radius: 10px;
         margin-bottom: 1rem;
-        /* The border-color is important for light mode appearance */
-        border: 1px solid #ddd; 
     }
     .stChatInput > div {
         border-radius: 25px;
@@ -78,6 +66,19 @@ st.markdown("""
         padding: 1rem;
         margin: 1rem 0;
         background-color: #fafafa;
+    }
+    .chat-message {
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+    }
+    .user-message {
+        background-color: #e6f3ff;
+        margin-left: 20%;
+    }
+    .assistant-message {
+        background-color: #f0f2f6;
+        margin-right: 20%;
     }
     .metric-card {
         background-color: white;
